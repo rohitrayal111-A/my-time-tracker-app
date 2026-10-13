@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Growth OS & Time Management</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #151f32;
+      --card-alt: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #3b82f6;
+      --accent: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --border: #243247;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 90px; min-height: 100vh; }
+    .container { max-width: 900px; margin: 0 auto; padding: 16px; }
+
+    /* Header */
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .title-box h1 { font-size: 1.25rem; font-weight: 700; color: #fff; }
+    .title-box p { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .header-actions { display: flex; gap: 8px; }
+    .btn-sm { padding: 6px 12px; font-size: 0.75rem; border-radius: 6px; border: 1px solid var(--border); background: var(--card-alt); color: var(--text); cursor: pointer; }
+
+    /* Date Bar */
+    .date-bar { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; }
+    .date-bar input[type="date"] { background: transparent; border: none; color: var(--text); font-size: 0.95rem; font-weight: 600; outline: none; }
+
+    /* Score Bar */
+    .day-score-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+    .score-label { display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; }
+    .progress-bar-bg { width: 100%; height: 10px; background: #243247; border-radius: 5px; overflow: hidden; margin-top: 8px; }
+    .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 0.3s ease; }
+
+    /* Tabs */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .card h2 { font-size: 1.05rem; font-weight: 600; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+
+    /* Form Controls */
+    .input-row { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    input, select, textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.9rem; }
+    input:focus, select:focus, textarea:focus { outline: 1px solid var(--primary); }
+    .btn { padding: 10px 16px; border-radius: 8px; border: none; background: var(--primary); color: #fff; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: 0.2s; width: 100%; }
+    .btn:active { transform: scale(0.98); }
+
+    /* Task & List Items */
+    ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+    .item.completed .item-text { text-decoration: line-through; color: var(--muted); }
+    .item-left { display: flex; align-items: center; gap: 10px; flex: 1; overflow: hidden; }
+    .tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    .tag-work { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+    .tag-ops { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .tag-growth { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .delete-btn { background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 4px; font-size: 0.95rem; }
+
+    /* Habit Counter Cards */
+    .habit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .habit-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+    .habit-card h3 { font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+    .habit-card .counter { font-size: 1.35rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .habit-actions { display: flex; justify-content: center; gap: 8px; }
+    .round-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--card-alt); color: var(--text); font-weight: 700; cursor: pointer; }
+
+    /* Bottom Navigation */
+    nav.bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; backdrop-filter: blur(10px); }
+    .nav-btn { background: none; border: none; color: var(--muted); font-size: 0.75rem; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; width: 20%; }
+    .nav-btn.active { color: var(--primary); font-weight: 700; }
+
+    /* Review Stars */
+    .star-rating { display: flex; gap: 6px; margin: 8px 0; font-size: 1.4rem; cursor: pointer; }
+    .star { color: var(--border); transition: 0.2s; }
+    .star.selected { color: #facc15; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="title-box">
+        <h1>Life OS & Growth Tracker</h1>
+        <p>Execution • Fitness • Mastery</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn-sm" onclick="exportData()">Backup</button>
+        <button class="btn-sm" onclick="document.getElementById('file-input').click()">Restore</button>
+        <input type="file" id="file-input" style="display: none;" onchange="importData(event)" accept=".json">
+      </div>
+    </header>
+
+    <div class="date-bar">
+      <span>Active Date:</span>
+      <input type="date" id="selected-date" onchange="loadDateData()">
+    </div>
+
+    <!-- Daily Score Bar -->
+    <div class="day-score-box">
+      <div class="score-label">
+        <span>Daily Completion Score</span>
+        <span id="score-text">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="score-fill"></div>
+      </div>
+    </div>
+
+    <!-- TAB 1: SCHEDULE & REAL-TIME ACTIVITY LOG -->
+    <div id="tab-tasks" class="tab-content active">
+      <div class="card">
+        <h2>Schedule Task (Date & Time)</h2>
+        <form id="task-form" class="input-row" onsubmit="addTask(event)">
+          <input type="text" id="task-title" placeholder="What needs to be done?" required />
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <input type="time" id="task-time" required />
+            <select id="task-cat">
+              <option value="Work">Business / Travel</option>
+              <option value="Ops">Operations / Field</option>
+              <option value="Growth">Self Growth / Study</option>
+            </select>
+          </div>
+          <button type="submit" class="btn">+ Add to Schedule</button>
+        </form>
+        <ul id="task-list"></ul>
+      </div>
+
+      <div class="card">
+        <h2>What I Did Today (Real-Time Work Log)</h2>
+        <form class="input-row" onsubmit="addLog(event)">
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="log-text" placeholder="Completed call, meeting, extra win..." required />
+            <button type="submit" class="btn" style="width: 80px;">Log</button>
+          </div>
+        </form>
+        <ul id="log-list"></ul>
+      </div>
+    </div>
+
+    <!-- TAB 2: HABITS & WELLNESS -->
+    <div id="tab-habits" class="tab-content">
+      <div class="card">
+        <h2>Daily Fitness & Habits</h2>
+        <div class="habit-grid">
+          <!-- Water Intake -->
+          <div class="habit-card">
+            <h3>Water Intake</h3>
+            <div class="counter"><span id="water-count">0</span> / 8 Glasses</div>
+            <div class="habit-actions">
+              <button class="round-btn" onclick="updateWater(-1)">-</button>
+              <button class="round-btn" onclick="updateWater(1)">+</button>
+            </div>
+          </div>
+          <!-- Running -->
+          <div class="habit-card">
+            <h3>Running / Cardio</h3>
+            <div class="counter"><span id="running-count">0</span> Km</div>
+            <div class="habit-actions">
+              <button class="round-btn" onclick="updateRunning(-0.5)">-</button>
+              <button class="round-btn" onclick="updateRunning(0.5)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;" class="habit-grid">
+          <!-- Yoga -->
+          <div class="habit-card">
+            <h3>Yoga Practice</h3>
+            <div class="counter"><span id="yoga-count">0</span> Mins</div>
+            <div class="habit-actions">
+              <button class="round-btn" onclick="updateYoga(-15)">-</button>
+              <button class="round-btn" onclick="updateYoga(15)">+</button>
+            </div>
+          </div>
+          <!-- Meditation -->
+          <div class="habit-card">
+            <h3>Meditation</h3>
+            <div class="counter"><span id="meditation-count">0</span> Mins</div>
+            <div class="habit-actions">
+              <button class="round-btn" onclick="updateMeditation(-10)">-</button>
+              <button class="round-btn" onclick="updateMeditation(10)">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: GOALS & GROWTH ROADMAP -->
+    <div id="tab-goals" class="tab-content">
+      <div class="card">
+        <h2>Set Milestone Goals & Growth Plan</h2>
+        <form class="input-row" onsubmit="addGoal(event)">
+          <input type="text" id="goal-title" placeholder="Goal title (e.g. Kedarkantha 100 Pax)" required />
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <input type="date" id="goal-date" required />
+            <select id="goal-tier">
+              <option value="Short-Term">Short-Term (Monthly)</option>
+              <option value="Mid-Term">Mid-Term (Quarterly)</option>
+              <option value="Long-Term">Long-Term Vision</option>
+            </select>
+          </div>
+          <button type="submit" class="btn">+ Add Goal</button>
+        </form>
+        <ul id="goals-list"></ul>
+      </div>
+    </div>
+
+    <!-- TAB 4: DAILY REVIEW -->
+    <div id="tab-review" class="tab-content">
+      <div class="card">
+        <h2>End of Day Review</h2>
+        <div style="margin-bottom: 12px;">
+          <label style="font-size: 0.8rem; color: var(--muted);">Discipline & Energy Rating:</label>
+          <div class="star-rating" id="star-box">
+            <span class="star" onclick="setStars(1)">★</span>
+            <span class="star" onclick="setStars(2)">★</span>
+            <span class="star" onclick="setStars(3)">★</span>
+            <span class="star" onclick="setStars(4)">★</span>
+            <span class="star" onclick="setStars(5)">★</span>
+          </div>
+        </div>
+        <div class="input-row">
+          <textarea id="rev-wins" rows="2" placeholder="Top wins and highlights today..."></textarea>
+          <textarea id="rev-learn" rows="2" placeholder="Key learning or personal insight..."></textarea>
+          <textarea id="rev-hurdles" rows="2" placeholder="What blocked you and how to improve tomorrow..."></textarea>
+          <button class="btn" onclick="saveReview()">Save Today's Review</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: ANALYTICS -->
+    <div id="tab-analytics" class="tab-content">
+      <div class="card">
+        <h2>Time & Growth Distribution</h2>
+        <div style="height: 240px; position: relative;">
+          <canvas id="focusChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" onclick="switchTab('tab-tasks', this)"><span>📅</span>Schedule</button>
+    <button class="nav-btn" onclick="switchTab('tab-habits', this)"><span>🧘</span>Habits</button>
+    <button class="nav-btn" onclick="switchTab('tab-goals', this)"><span>🎯</span>Goals</button>
+    <button class="nav-btn" onclick="switchTab('tab-review', this)"><span>📝</span>Review</button>
+    <button class="nav-btn" onclick="switchTab('tab-analytics', this)"><span>📊</span>Insights</button>
+  </nav>
+
+  <script>
+    const STORAGE_KEY = 'life_os_full_v2';
+    let db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+      tasks: [],
+      logs: [],
+      habits: {},
+      goals: [],
+      reviews: {}
+    };
+
+    let currentDate = new Date().toISOString().split('T')[0];
+    document.getElementById('selected-date').value = currentDate;
+    let currentRating = 0;
+    let chartInstance = null;
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+      renderAll();
+    }
+
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      el.classList.add('active');
+      if (tabId === 'tab-analytics') renderChart();
+    }
+
+    function loadDateData() {
+      currentDate = document.getElementById('selected-date').value;
+      renderAll();
+    }
+
+    // Tasks
+    function addTask(e) {
+      e.preventDefault();
+      const title = document.getElementById('task-title').value.trim();
+      const time = document.getElementById('task-time').value;
+      const cat = document.getElementById('task-cat').value;
+      db.tasks.push({ id: Date.now(), title, time, cat, date: currentDate, done: false });
+      document.getElementById('task-title').value = '';
+      saveState();
+    }
+
+    function toggleTask(id) {
+      db.tasks = db.tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
+      saveState();
+    }
+
+    function deleteTask(id) {
+      db.tasks = db.tasks.filter(t => t.id !== id);
+      saveState();
+    }
+
+    // Activity Log
+    function addLog(e) {
+      e.preventDefault();
+      const text = document.getElementById('log-text').value.trim();
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      db.logs.push({ id: Date.now(), text, time: timeStr, date: currentDate });
+      document.getElementById('log-text').value = '';
+      saveState();
+    }
+
+    function deleteLog(id) {
+      db.logs = db.logs.filter(l => l.id !== id);
+      saveState();
+    }
+
+    // Habits
+    function getHabitRecord() {
+      if (!db.habits[currentDate]) {
+        db.habits[currentDate] = { water: 0, running: 0, yoga: 0, meditation: 0 };
+      }
+      return db.habits[currentDate];
+    }
+
+    function updateWater(val) {
+      const h = getHabitRecord();
+      h.water = Math.max(0, h.water + val);
+      saveState();
+    }
+    function updateRunning(val) {
+      const h = getHabitRecord();
+      h.running = Math.max(0, parseFloat((h.running + val).toFixed(1)));
+      saveState();
+    }
+    function updateYoga(val) {
+      const h = getHabitRecord();
+      h.yoga = Math.max(0, h.yoga + val);
+      saveState();
+    }
+    function updateMeditation(val) {
+      const h = getHabitRecord();
+      h.meditation = Math.max(0, h.meditation + val);
+      saveState();
+    }
+
+    // Goals
+    function addGoal(e) {
+      e.preventDefault();
+      const title = document.getElementById('goal-title').value.trim();
+      const deadline = document.getElementById('goal-date').value;
+      const tier = document.getElementById('goal-tier').value;
+      db.goals.push({ id: Date.now(), title, deadline, tier, progress: 0 });
+      document.getElementById('goal-title').value = '';
+      saveState();
+    }
+
+    function updateGoalProgress(id, val) {
+      db.goals = db.goals.map(g => g.id === id ? { ...g, progress: parseInt(val) } : g);
+      saveState();
+    }
+
+    function deleteGoal(id) {
+      db.goals = db.goals.filter(g => g.id !== id);
+      saveState();
+    }
+
+    // Review
+    function setStars(val) {
+      currentRating = val;
+      const stars = document.querySelectorAll('#star-box .star');
+      stars.forEach((s, idx) => {
+        s.classList.toggle('selected', idx < val);
+      });
+    }
+
+    function saveReview() {
+      const wins = document.getElementById('rev-wins').value;
+      const learn = document.getElementById('rev-learn').value;
+      const hurdles = document.getElementById('rev-hurdles').value;
+      db.reviews[currentDate] = { rating: currentRating, wins, learn, hurdles };
+      saveState();
+      alert("Review saved for " + currentDate);
+    }
+
+    // Render Function
+    function renderAll() {
+      // Render Tasks
+      const dayTasks = db.tasks.filter(t => t.date === currentDate).sort((a,b) => a.time.localeCompare(b.time));
+      const taskList = document.getElementById('task-list');
+      taskList.innerHTML = dayTasks.length === 0 ? '<li style="color:var(--muted); font-size:0.85rem; padding: 6px 0;">No tasks scheduled for this date.</li>' : '';
+      dayTasks.forEach(t => {
+        const li = document.createElement('li');
+        li.className = `item ${t.done ? 'completed' : ''}`;
+        let tagClass = t.cat === 'Work' ? 'tag-work' : t.cat === 'Ops' ? 'tag-ops' : 'tag-growth';
+        li.innerHTML = `
+          <div class="item-left">
+            <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})">
+            <div>
+              <div class="item-text" style="font-size:0.9rem;">${t.title}</div>
+              <div style="font-size:0.75rem; color:var(--muted); margin-top:2px;">
+                <span>⏰ ${t.time}</span> • <span class="tag ${tagClass}">${t.cat}</span>
+              </div>
+            </div>
+          </div>
+          <button class="delete-btn" onclick="deleteTask(${t.id})">✕</button>
+        `;
+        taskList.appendChild(li);
+      });
+
+      // Render Logs
+      const dayLogs = db.logs.filter(l => l.date === currentDate);
+      const logList = document.getElementById('log-list');
+      logList.innerHTML = dayLogs.length === 0 ? '<li style="color:var(--muted); font-size:0.85rem; padding: 6px 0;">No recorded activity yet.</li>' : '';
+      dayLogs.forEach(l => {
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `
+          <div style="font-size:0.85rem;"><span style="color:var(--primary); font-weight:600;">[${l.time}]</span> ${l.text}</div>
+          <button class="delete-btn" onclick="deleteLog(${l.id})">✕</button>
+        `;
+        logList.appendChild(li);
+      });
+
+      // Render Habits
+      const h = getHabitRecord();
+      document.getElementById('water-count').innerText = h.water;
+      document.getElementById('running-count').innerText = h.running;
+      document.getElementById('yoga-count').innerText = h.yoga;
+      document.getElementById('meditation-count').innerText = h.meditation;
+
+      // Render Goals
+      const goalsList = document.getElementById('goals-list');
+      goalsList.innerHTML = db.goals.length === 0 ? '<li style="color:var(--muted); font-size:0.85rem; padding: 6px 0;">No goals established yet.</li>' : '';
+      db.goals.forEach(g => {
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.style.flexDirection = 'column';
+        li.style.alignItems = 'stretch';
+        li.innerHTML = `
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="font-weight:600;">${g.title}</span>
+            <span style="font-size:0.75rem; color:var(--muted);">${g.tier} (Target: ${g.deadline})</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <input type="range" min="0" max="100" value="${g.progress}" style="flex:1;" onchange="updateGoalProgress(${g.id}, this.value)">
+            <span style="font-size:0.85rem; font-weight:700; width:40px;">${g.progress}%</span>
+            <button class="delete-btn" onclick="deleteGoal(${g.id})">✕</button>
+          </div>
+        `;
+        goalsList.appendChild(li);
+      });
+
+      // Render Review
+      const rev = db.reviews[currentDate] || { rating: 0, wins: '', learn: '', hurdles: '' };
+      setStars(rev.rating);
+      document.getElementById('rev-wins').value = rev.wins;
+      document.getElementById('rev-learn').value = rev.learn;
+      document.getElementById('rev-hurdles').value = rev.hurdles;
+
+      // Calculate Day Score
+      const totalT = dayTasks.length;
+      const doneT = dayTasks.filter(t => t.done).length;
+      let habitPoints = (h.water >= 8 ? 25 : (h.water / 8) * 25) + (h.running > 0 ? 25 : 0) + (h.yoga > 0 ? 25 : 0) + (h.meditation > 0 ? 25 : 0);
+      let taskPoints = totalT > 0 ? (doneT / totalT) * 100 : 0;
+      let overall = totalT > 0 ? Math.round((taskPoints * 0.6) + (habitPoints * 0.4)) : Math.round(habitPoints);
+      overall = Math.min(100, Math.max(0, overall));
+
+      document.getElementById('score-fill').style.width = overall + '%';
+      document.getElementById('score-text').innerText = overall + '%';
+    }
+
+    // Chart
+    function renderChart() {
+      const ctx = document.getElementById('focusChart').getContext('2d');
+      const counts = { Work: 0, Ops: 0, Growth: 0 };
+      db.tasks.forEach(t => { if (counts[t.cat] !== undefined) counts[t.cat]++; });
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Business / Tour', 'Operations', 'Personal Growth'],
+          datasets: [{
+            data: [counts.Work, counts.Ops, counts.Growth],
+            backgroundColor: ['#3b82f6', '#f59e0b', '#10b981'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } }
+        }
+      });
+    }
+
+    // Backup & Restore
+    function exportData() {
+      const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `life_os_backup_${currentDate}.json`;
+      a.click();
+    }
+
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          db = JSON.parse(event.target.result);
+          saveState();
+          alert('Backup restored successfully!');
+        } catch(err) {
+          alert('Invalid JSON file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    renderAll();
+  </script>
+</body>
+</html>
